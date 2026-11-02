@@ -9,7 +9,7 @@ I am using an MT7921AU Wi-Fi USB stick with the modified driver and firmware fro
 
 Also has some changes so that it works properly with osmocom_fft -F (on Wayland)
 
-Text-size (freq and amplitude) are still quite small on my HiDPI screen.
+Text-size (freq and amplitude) are still quite small on my HiDPI screen. These axis labels are actually missing completely from the screenshots below, but they are there on my screen - trust me.
 
 Build instructions are after the screenshots.
 
