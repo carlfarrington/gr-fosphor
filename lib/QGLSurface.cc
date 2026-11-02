@@ -24,6 +24,17 @@ QGLSurface::QGLSurface(QWidget *parent, qt_sink_c_impl *block)
 	/* Save the pointer to the main GUI thread */
 	this->d_gui_thread = this->thread();
 
+	/*
+	 * This widget is a native window (it has its own GL surface). By default
+	 * Qt also makes all its ancestors native. On Wayland those ancestors
+	 * become sub-surfaces that never get a buffer attached (the content of
+	 * non-toplevel widgets is painted in the toplevel's buffer), and a
+	 * sub-surface whose parent is unmapped is not displayed. The result is
+	 * a blank box when the widget isn't a direct child of the toplevel.
+	 */
+	this->setAttribute(Qt::WA_NativeWindow);
+	this->setAttribute(Qt::WA_DontCreateNativeAncestors);
+
 	/* QWidget policies */
 	this->setFocusPolicy(Qt::StrongFocus);
 	this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -62,8 +73,16 @@ QGLSurface::resizeEvent(QResizeEvent *re)
 	 * _other_ threads to be current, so don't do that !
 	 */
 
-	/* Call back to main block */
-	this->d_block->cb_reshape(re->size().width(), re->size().height());
+	/*
+	 * Call back to main block
+	 * (the GL surface is in device pixels, which differs from the widget
+	 *  size in logical pixels on HiDPI / scaled displays)
+	 */
+	qreal dpr = this->devicePixelRatioF();
+	this->d_block->cb_reshape(
+		qRound(re->size().width()  * dpr),
+		qRound(re->size().height() * dpr)
+	);
 }
 
 void
@@ -117,8 +136,10 @@ QGLSurface::mousePressEvent(QMouseEvent *me)
 	if (me->type() != QEvent::MouseButtonDblClick)
 		return;
 
-	x = me->x();
-	y = this->size().height() - me->y() - 1;
+	qreal dpr = this->devicePixelRatioF();
+
+	x = qRound(me->x() * dpr);
+	y = qRound((this->size().height() - me->y() - 1) * dpr);
 
 	this->d_block->execute_mouse_action(qt_sink_c_impl::CLICK, x, y);
 }
@@ -127,12 +148,28 @@ QGLSurface::mousePressEvent(QMouseEvent *me)
 void
 QGLSurface::grabContext()
 {
-	QMetaObject::invokeMethod(
-		this,
-		"giveContext",
-		Qt::BlockingQueuedConnection,
-		Q_ARG(QThread*, QThread::currentThread())
-	);
+	/*
+	 * Since the widget isn't made native together with its ancestors, its
+	 * native window (and thus its GL context) may only exist once the
+	 * toplevel window has been created, i.e. when it's first shown.
+	 * Wait for that (but not forever).
+	 */
+	for (int i=0; i<200; i++) {
+		bool ok = false;
+
+		QMetaObject::invokeMethod(
+			this,
+			"giveContext",
+			Qt::BlockingQueuedConnection,
+			Q_RETURN_ARG(bool, ok),
+			Q_ARG(QThread*, QThread::currentThread())
+		);
+
+		if (ok)
+			break;
+
+		QThread::msleep(50);
+	}
 
 	this->makeCurrent();
 }
@@ -144,11 +181,30 @@ QGLSurface::releaseContext()
 	this->context()->moveToThread(this->d_gui_thread);
 }
 
-void
+bool
 QGLSurface::giveContext(QThread *thread)
 {
+	if (!this->context() || !this->context()->isValid()) {
+		/* QGLWidget doesn't re-create its context when its native
+		 * window is re-created (e.g. when it's re-parented) */
+		if (!this->windowHandle())
+			return false;
+
+		bool was_visible = this->isVisible();
+
+		this->setContext(new QGLContext(this->format()));
+
+		/* (setContext hides the widget) */
+		if (was_visible && !this->isVisible())
+			this->show();
+
+		if (!this->context() || !this->context()->isValid())
+			return false;
+	}
+
 	this->doneCurrent();
 	this->context()->moveToThread(thread);
+	return true;
 }
 
   } /* namespace fosphor */

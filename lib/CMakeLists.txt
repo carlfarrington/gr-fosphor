@@ -59,6 +59,7 @@ target_link_libraries(gnuradio-fosphor
 	gnuradio::gnuradio-runtime
 	gnuradio::gnuradio-fft
 	${CMAKE_DL_LIBS}
+	${EGL_LIBRARIES}
 )
 
 if(WIN32)

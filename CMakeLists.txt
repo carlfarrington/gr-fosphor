@@ -17,7 +17,6 @@ enable_testing()
 cmake_policy(SET CMP0011 NEW)
 cmake_policy(SET CMP0071 NEW)
 
-
 #select the release build type by default to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE "Release")
@@ -91,7 +90,7 @@ set(GR_PKG_LIBEXEC_DIR  ${GR_LIBEXEC_DIR}/${CMAKE_PROJECT_NAME})
 ########################################################################
 # Find boost
 ########################################################################
-find_package(Boost "1.65" COMPONENTS system chrono thread)
+find_package(Boost "1.65" COMPONENTS chrono thread)
 
 if(NOT Boost_FOUND)
     message(FATAL_ERROR "Boost required to compile gr-fosphor")
@@ -107,6 +106,10 @@ find_package(OpenGL)
 if(NOT OPENGL_FOUND)
 	message(FATAL_ERROR "OpenGL required to compile gr-fosphor")
 endif()
+
+set(CMAKE_REQUIRE_FIND_PACKAGE_X11 FALSE)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(EGL REQUIRED egl)
 
 find_package(OpenCL)
 if(NOT OpenCL_FOUND)

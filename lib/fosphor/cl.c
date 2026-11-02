@@ -16,6 +16,7 @@
  */
 
 #include <ctype.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,7 +32,7 @@
 # include <windows.h>
 # include <wingdi.h>
 #else
-# include <GL/glx.h>
+# include <EGL/egl.h>
 #endif
 
 #include "cl.h"
@@ -613,17 +614,39 @@ cl_do_init(struct fosphor *self)
 
 			/* Linux variant */
 		ctx_props[0] = CL_GL_CONTEXT_KHR;
-		ctx_props[1] = (cl_context_properties) glXGetCurrentContext();
-		ctx_props[2] = CL_GLX_DISPLAY_KHR;
-		ctx_props[3] = (cl_context_properties) glXGetCurrentDisplay();
+		ctx_props[1] = (cl_context_properties) eglGetCurrentContext();
+		ctx_props[2] = CL_EGL_DISPLAY_KHR;
+		ctx_props[3] = (cl_context_properties) eglGetCurrentDisplay();
 		ctx_props[4] = CL_CONTEXT_PLATFORM;
 		ctx_props[5] = (cl_context_properties) cl->pl_id;
 		ctx_props[6] = 0;
 
+		if (!ctx_props[1] || !ctx_props[3]) {
+			/* Not running on an EGL context (e.g. GLX under X11) */
+			fprintf(stderr, "[w] No current EGL context, CL/GL sharing disabled\n");
+			self->flags &= ~FLG_FOSPHOR_USE_CLGL_SHARING;
+			ctx_props[0] = 0;
+		}
+
 #endif
 
 		/* Attempt to create context */
-		cl->ctx = clCreateContext(ctx_props, 1, &cl->dev_id, NULL, NULL, &err);
+#if !defined(__APPLE__) && !defined(MACOSX) && !defined(_WIN32)
+		/*
+		 * Some OpenCL implementations (e.g. Mesa rusticl) look up
+		 * eglGetProcAddress with dlsym(RTLD_DEFAULT, ...) to do the GL
+		 * interop. That only works if libEGL is in the global symbol
+		 * scope, which isn't the case when we're loaded as a (RTLD_LOCAL)
+		 * python extension module. Promote it to global.
+		 */
+		dlopen("libEGL.so.1", RTLD_LAZY | RTLD_GLOBAL);
+#endif
+
+		if (self->flags & FLG_FOSPHOR_USE_CLGL_SHARING)
+			cl->ctx = clCreateContext(ctx_props, 1, &cl->dev_id, NULL, NULL, &err);
+		else
+			err = CL_SUCCESS;
+
 		if (err != CL_SUCCESS) {
 			/* Failed, we'll retry again without CL/GL sharing */
 			fprintf(stderr, "[w] CL Error (%d, %s:%d): "

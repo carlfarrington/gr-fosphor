@@ -34,7 +34,7 @@ namespace gr {
       void mousePressEvent(QMouseEvent *me);
 
      private slots:
-      void giveContext(QThread *thread);
+      bool giveContext(QThread *thread);
 
      public:
       QGLSurface(QWidget *parent, qt_sink_c_impl *d_block);

@@ -46,6 +46,13 @@ qt_sink_c_impl::qt_sink_c_impl(QWidget *parent)
 		d_qApplication = new QApplication(argc, argv);
 	}
 
+	/*
+	 * The GL surface is a native window. Don't force its siblings (and
+	 * through them their ancestors) to become native as well, see
+	 * QGLSurface::QGLSurface().
+	 */
+	QCoreApplication::setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
+
 	this->d_gui = new QGLSurface(parent, this);
 }
 
@@ -60,6 +67,7 @@ qt_sink_c_impl::glctx_init()
 void
 qt_sink_c_impl::glctx_swap()
 {
+
 	this->d_gui->swapBuffers();
 }
 
