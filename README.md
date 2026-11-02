@@ -25,6 +25,7 @@ So it's necessary to first obtain pybind11-3.0.1 as below, and then direct the g
 
 Install mesa-opencl-icd
 
+```
 cd /tmp
 git clone --branch v3.0.1 --depth 1 https://github.com/pybind/pybind11.git pybind11-3.0.1
 
@@ -33,9 +34,9 @@ cmake -S pybind11-3.0.1 -B pybind11-3.0.1/build \
     -DPYBIND11_TEST=OFF
 
 sudo cmake --install pybind11-3.0.1/build
-
+```
 Then build this gr-fosphor as below:
-
+```
 cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DGR_PYTHON_DIR=/usr/lib/python3/dist-packages \
@@ -43,11 +44,11 @@ cmake -S . -B build \
 
 sudo cmake --install build
 sudo ldconfig
-
+```
 Then launch, e.g.:
-
+```
 RUSTICL_ENABLE=iris osmocom_fft -F -s 80M -f 2.45G
-
+```
 This repository contains a GNU Radio block for RTSA-like spectrum visualization using OpenCL and OpenGL
 acceleration.
 
