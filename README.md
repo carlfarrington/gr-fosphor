@@ -5,7 +5,7 @@ Modified to work with Wayland and mesa-rusticl, with CL/GL context sharing for I
 Intel's own ICD (NEO) doesn't suppot CL/GL context sharing on Wayland, apparently.
 AI did all the work.
 
-I am using an MT7921AU Wi-Fi USB stick with the modified firmware from the [Mtk79ICAP] Project](https://github.com/MtkWifiRev/Mtk79ICAP)
+I am using an MT7921AU Wi-Fi USB stick with the modified driver and firmware from the [Mtk79ICAP Project](https://github.com/MtkWifiRev/Mtk79ICAP)
 
 Also has some changes so that it works properly with osmocom_fft -F (on Wayland)
 
