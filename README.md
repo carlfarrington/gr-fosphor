@@ -52,6 +52,7 @@ RUSTICL_ENABLE=iris osmocom_fft -F -s 80M -f 2.45G
 This repository contains a GNU Radio block for RTSA-like spectrum visualization using OpenCL and OpenGL
 acceleration.
 
+---
 
 The block has been used successfully on Linux, OSX and Windows.
 
